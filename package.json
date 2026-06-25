@@ -1,0 +1,28 @@
+{
+  "name": "prompt-memory",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-first prompt memory and duplicate prompt detection for AI-assisted development workflows.",
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "keywords": [
+    "prompt-memory",
+    "prompt-deduplication",
+    "ai-tools",
+    "developer-tools",
+    "vscode"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  },
+  "packageManager": "pnpm@10.0.0"
+}
