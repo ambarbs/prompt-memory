@@ -146,4 +146,49 @@ program
     },
   );
 
+program
+  .command('list')
+  .description('List recently saved prompts')
+  .option('-p, --project <projectId>', 'Project/workspace identifier')
+  .option('-d, --db-path <path>', 'SQLite database path', defaultDatabasePath)
+  .option('-l, --limit <number>', 'Number of prompts to show', '10')
+  .action((options: { project?: string; dbPath: string; limit: string }) => {
+    mkdirSync(dirname(options.dbPath), { recursive: true });
+
+    const repository = openPromptRepository(options.dbPath);
+    const limit = Number(options.limit);
+
+    const prompts = options.project
+      ? repository.findSimilarCandidates({
+          projectId: options.project,
+          limit,
+        })
+      : repository.findRecentPrompts(limit);
+
+    if (prompts.length === 0) {
+      console.log('No prompts found.');
+      return;
+    }
+
+    for (const prompt of prompts) {
+      console.log(`- ${prompt.rawPrompt}`);
+      console.log(`  ID: ${prompt.id}`);
+      console.log(`  Created: ${prompt.createdAt}`);
+
+      if (prompt.projectId) {
+        console.log(`  Project: ${prompt.projectId}`);
+      }
+
+      if (prompt.filePath) {
+        console.log(`  File: ${prompt.filePath}`);
+      }
+
+      if (prompt.branchName) {
+        console.log(`  Branch: ${prompt.branchName}`);
+      }
+
+      console.log('');
+    }
+  });
+
 program.parse();
