@@ -25,6 +25,7 @@ program
   .option('-d, --db-path <path>', 'SQLite database path', defaultDatabasePath)
   .option('-t, --threshold <number>', 'Similarity threshold', '0.75')
   .option('--save', 'Save the prompt if no duplicate is found')
+  .option('--json', 'Print result as JSON')
   .action(
     (
       prompt: string,
@@ -33,6 +34,7 @@ program
         dbPath: string;
         threshold: string;
         save?: boolean;
+        json?: boolean;
       },
     ) => {
       mkdirSync(dirname(options.dbPath), { recursive: true });
@@ -45,6 +47,36 @@ program
         threshold: Number(options.threshold),
       });
 
+      if (options.json) {
+        const status =
+          result.exactMatches.length > 0
+            ? 'exact_duplicate'
+            : result.similarMatches.length > 0
+              ? 'similar_found'
+              : 'no_match';
+
+        console.log(
+          JSON.stringify(
+            {
+              status,
+              prompt,
+              projectId: options.project ?? null,
+              normalizedPrompt: result.normalizedPrompt,
+              promptHash: result.promptHash,
+              exactMatches: result.exactMatches,
+              similarMatches: result.similarMatches,
+            },
+            null,
+            2,
+          ),
+        );
+
+        if (status !== 'no_match') {
+          process.exitCode = 1;
+        }
+
+        return;
+      }
       if (result.exactMatches.length > 0) {
         console.log('Exact duplicate found.\n');
 
@@ -126,6 +158,7 @@ program
   .option('--file-path <path>', 'Related file path')
   .option('--branch <branchName>', 'Git branch name')
   .option('--selected-code-hash <hash>', 'Hash of selected code context')
+  .option('--json', 'Print result as JSON')
   .action(
     (
       prompt: string,
@@ -136,6 +169,7 @@ program
         filePath?: string;
         branch?: string;
         selectedCodeHash?: string;
+        json?: boolean;
       },
     ) => {
       mkdirSync(dirname(options.dbPath), { recursive: true });
@@ -150,6 +184,21 @@ program
         branchName: options.branch,
         selectedCodeHash: options.selectedCodeHash,
       });
+
+      if (options.json) {
+        console.log(
+          JSON.stringify(
+            {
+              status: result.status,
+              prompt: result.prompt,
+            },
+            null,
+            2,
+          ),
+        );
+
+        return;
+      }
 
       if (result.status === 'duplicate') {
         console.log('Prompt already exists.');
@@ -179,43 +228,67 @@ program
   .option('-p, --project <projectId>', 'Project/workspace identifier')
   .option('-d, --db-path <path>', 'SQLite database path', defaultDatabasePath)
   .option('-l, --limit <number>', 'Number of prompts to show', '10')
-  .action((options: { project?: string; dbPath: string; limit: string }) => {
-    mkdirSync(dirname(options.dbPath), { recursive: true });
+  .option('--json', 'Print result as JSON')
+  .action(
+    (options: {
+      project?: string;
+      dbPath: string;
+      limit: string;
+      json?: boolean;
+    }) => {
+      mkdirSync(dirname(options.dbPath), { recursive: true });
 
-    const repository = openPromptRepository(options.dbPath);
-    const limit = Number(options.limit);
+      const repository = openPromptRepository(options.dbPath);
+      const limit = Number(options.limit);
 
-    const prompts = options.project
-      ? repository.findSimilarCandidates({
-          projectId: options.project,
-          limit,
-        })
-      : repository.findRecentPrompts(limit);
+      const prompts = options.project
+        ? repository.findSimilarCandidates({
+            projectId: options.project,
+            limit,
+          })
+        : repository.findRecentPrompts(limit);
 
-    if (prompts.length === 0) {
-      console.log('No prompts found.');
-      return;
-    }
+      if (options.json) {
+        console.log(
+          JSON.stringify(
+            {
+              status: 'ok',
+              count: prompts.length,
+              prompts,
+            },
+            null,
+            2,
+          ),
+        );
 
-    for (const prompt of prompts) {
-      console.log(`- ${prompt.rawPrompt}`);
-      console.log(`  ID: ${prompt.id}`);
-      console.log(`  Created: ${prompt.createdAt}`);
-
-      if (prompt.projectId) {
-        console.log(`  Project: ${prompt.projectId}`);
+        return;
       }
 
-      if (prompt.filePath) {
-        console.log(`  File: ${prompt.filePath}`);
+      if (prompts.length === 0) {
+        console.log('No prompts found.');
+        return;
       }
 
-      if (prompt.branchName) {
-        console.log(`  Branch: ${prompt.branchName}`);
-      }
+      for (const prompt of prompts) {
+        console.log(`- ${prompt.rawPrompt}`);
+        console.log(`  ID: ${prompt.id}`);
+        console.log(`  Created: ${prompt.createdAt}`);
 
-      console.log('');
-    }
-  });
+        if (prompt.projectId) {
+          console.log(`  Project: ${prompt.projectId}`);
+        }
+
+        if (prompt.filePath) {
+          console.log(`  File: ${prompt.filePath}`);
+        }
+
+        if (prompt.branchName) {
+          console.log(`  Branch: ${prompt.branchName}`);
+        }
+
+        console.log('');
+      }
+    },
+  );
 
 program.parse();
