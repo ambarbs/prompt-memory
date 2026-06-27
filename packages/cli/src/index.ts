@@ -7,6 +7,7 @@ import { Command } from 'commander';
 import { openPromptRepository } from '@prompt-memory/sqlite';
 import { checkPrompt } from './checkPrompt.js';
 import { savePrompt } from './savePrompt.js';
+import { getGitContext } from './gitContext.js';
 
 const defaultDatabasePath = join(homedir(), '.prompt-memory', 'prompts.sqlite');
 
@@ -41,9 +42,12 @@ program
 
       const repository = openPromptRepository(options.dbPath);
 
+      const gitContext = getGitContext();
+      const projectId = options.project ?? gitContext.projectId;
+
       const result = checkPrompt(repository, {
         prompt,
-        projectId: options.project,
+        projectId,
         threshold: Number(options.threshold),
       });
 
@@ -122,7 +126,7 @@ program
       if (options.save) {
         const saved = savePrompt(repository, {
           prompt,
-          projectId: options.project,
+          projectId,
         });
 
         if (saved.status === 'saved') {
@@ -175,10 +179,12 @@ program
       mkdirSync(dirname(options.dbPath), { recursive: true });
 
       const repository = openPromptRepository(options.dbPath);
+      const gitContext = getGitContext();
+      const projectId = options.project ?? gitContext.projectId;
 
       const result = savePrompt(repository, {
         prompt,
-        projectId: options.project,
+        projectId,
         workspacePath: options.workspacePath,
         filePath: options.filePath,
         branchName: options.branch,

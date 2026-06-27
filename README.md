@@ -166,6 +166,19 @@ Limit the number of prompts shown:
 pnpm pcheck list --limit 5
 ```
 
+### Automatic Git context
+
+When run inside a Git repository, the CLI automatically detects:
+
+- project name from the Git root folder
+- workspace path from `git rev-parse --show-toplevel`
+- branch name from `git rev-parse --abbrev-ref HEAD`
+
+Manual flags still override auto-detected values:
+
+```bash
+pnpm pcheck save "add tests" --project custom-project --branch feature/demo
+
 ## Local Database
 
 By default, prompts are stored locally at:
