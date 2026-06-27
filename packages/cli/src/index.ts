@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path';
 import { Command } from 'commander';
 import { openPromptRepository } from '@prompt-memory/sqlite';
 import { checkPrompt } from './checkPrompt.js';
+import { savePrompt } from './savePrompt.js';
 
 const defaultDatabasePath = join(homedir(), '.prompt-memory', 'prompts.sqlite');
 
@@ -85,6 +86,63 @@ program
       }
 
       console.log('No duplicate prompts found.');
+    },
+  );
+
+program
+  .command('save')
+  .description('Save a prompt to local prompt memory')
+  .argument('<prompt>', 'Prompt text to save')
+  .option('-p, --project <projectId>', 'Project/workspace identifier')
+  .option('-d, --db-path <path>', 'SQLite database path', defaultDatabasePath)
+  .option('--workspace-path <path>', 'Workspace path')
+  .option('--file-path <path>', 'Related file path')
+  .option('--branch <branchName>', 'Git branch name')
+  .option('--selected-code-hash <hash>', 'Hash of selected code context')
+  .action(
+    (
+      prompt: string,
+      options: {
+        project?: string;
+        dbPath: string;
+        workspacePath?: string;
+        filePath?: string;
+        branch?: string;
+        selectedCodeHash?: string;
+      },
+    ) => {
+      mkdirSync(dirname(options.dbPath), { recursive: true });
+
+      const repository = openPromptRepository(options.dbPath);
+
+      const result = savePrompt(repository, {
+        prompt,
+        projectId: options.project,
+        workspacePath: options.workspacePath,
+        filePath: options.filePath,
+        branchName: options.branch,
+        selectedCodeHash: options.selectedCodeHash,
+      });
+
+      if (result.status === 'duplicate') {
+        console.log('Prompt already exists.');
+        console.log(`ID: ${result.prompt.id}`);
+        console.log(`Created: ${result.prompt.createdAt}`);
+
+        if (result.prompt.projectId) {
+          console.log(`Project: ${result.prompt.projectId}`);
+        }
+
+        return;
+      }
+
+      console.log('Prompt saved.');
+      console.log(`ID: ${result.prompt.id}`);
+      console.log(`Created: ${result.prompt.createdAt}`);
+
+      if (result.prompt.projectId) {
+        console.log(`Project: ${result.prompt.projectId}`);
+      }
     },
   );
 
