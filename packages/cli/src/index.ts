@@ -24,6 +24,7 @@ program
   .option('-p, --project <projectId>', 'Project/workspace identifier')
   .option('-d, --db-path <path>', 'SQLite database path', defaultDatabasePath)
   .option('-t, --threshold <number>', 'Similarity threshold', '0.75')
+  .option('--save', 'Save the prompt if no duplicate is found')
   .action(
     (
       prompt: string,
@@ -31,6 +32,7 @@ program
         project?: string;
         dbPath: string;
         threshold: string;
+        save?: boolean;
       },
     ) => {
       mkdirSync(dirname(options.dbPath), { recursive: true });
@@ -82,6 +84,31 @@ program
         }
 
         process.exitCode = 1;
+        return;
+      }
+
+      if (options.save) {
+        const saved = savePrompt(repository, {
+          prompt,
+          projectId: options.project,
+        });
+
+        if (saved.status === 'saved') {
+          console.log('No duplicate prompts found.');
+          console.log('Prompt saved.');
+          console.log(`ID: ${saved.prompt.id}`);
+          console.log(`Created: ${saved.prompt.createdAt}`);
+
+          if (saved.prompt.projectId) {
+            console.log(`Project: ${saved.prompt.projectId}`);
+          }
+
+          return;
+        }
+
+        console.log('Prompt already exists.');
+        console.log(`ID: ${saved.prompt.id}`);
+        console.log(`Created: ${saved.prompt.createdAt}`);
         return;
       }
 
