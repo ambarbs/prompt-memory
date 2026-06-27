@@ -7,6 +7,11 @@ import {
 } from '@prompt-memory/core';
 import type { PromptRepository, PromptRecord } from '@prompt-memory/sqlite';
 
+type CheckPromptRepository = Pick<
+  PromptRepository,
+  'findByHash' | 'findSimilarCandidates'
+>;
+
 export type CheckPromptInput = {
   prompt: string;
   projectId?: string;
@@ -22,7 +27,7 @@ export type CheckPromptResult = {
 };
 
 export function checkPrompt(
-  repository: PromptRepository,
+  repository: CheckPromptRepository,
   input: CheckPromptInput,
 ): CheckPromptResult {
   const normalizedPrompt = normalizePrompt(input.prompt);

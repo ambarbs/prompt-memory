@@ -1,6 +1,8 @@
 import { hashPrompt, normalizePrompt } from '@prompt-memory/core';
 import type { PromptRecord, PromptRepository } from '@prompt-memory/sqlite';
 
+type SavePromptRepository = Pick<PromptRepository, 'findByHash' | 'savePrompt'>;
+
 export type SavePromptCommandInput = {
   prompt: string;
   projectId?: string;
@@ -21,7 +23,7 @@ export type SavePromptResult =
     };
 
 export function savePrompt(
-  repository: PromptRepository,
+  repository: SavePromptRepository,
   input: SavePromptCommandInput,
 ): SavePromptResult {
   const normalizedPrompt = normalizePrompt(input.prompt);
